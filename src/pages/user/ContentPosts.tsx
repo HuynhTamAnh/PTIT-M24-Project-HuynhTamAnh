@@ -16,7 +16,7 @@ import {
   Favorite as FavoriteIcon,
   Send as SendIcon,
 } from "@mui/icons-material";
-import { IUsers, IPosts } from "../../interface";
+import { IPosts } from "../../interface";
 import { AppDispatch, RootState } from "../../store";
 import {
   getAllUsersInfo,
