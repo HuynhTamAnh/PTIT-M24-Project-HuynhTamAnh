@@ -52,9 +52,13 @@ const RegisterPage: React.FC = () => {
     form
       .validateFields()
       .then(() => {
+        console.log(form.getFieldsValue());
+
         setCurrentStep(currentStep + 1);
       })
-      .catch((info) => {});
+      .catch((info) => {
+        console.log("Validate Failed:", info);
+      });
   };
 
   const prevStep = () => {

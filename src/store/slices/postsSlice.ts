@@ -35,7 +35,7 @@ export const updatePost: any = createAsyncThunk<
   IPosts,
   { id: number; data: Partial<IPosts> }
 >("posts/updatePost", async ({ id, data }) => {
-  const response = await instance.put(`posts/${id}`, data);
+  const response = await instance.patch(`posts/${id}`, data);
   return response.data;
 });
 
@@ -73,7 +73,7 @@ const initialState: PostsState = {
 export const getAllUsersInfo: any = createAsyncThunk(
   "posts/getAllUsersInfo",
   async () => {
-    const res = await instance.get("/users");
+    const res = await instance.get("/users?role_like=user"); //lấy thông tin của user trừ admin
     return res.data;
   }
 );
@@ -187,6 +187,10 @@ const postsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to delete post";
       })
+      .addCase(getAllUsersInfo.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
       .addCase(getAllUsersInfo.fulfilled, (state, action) => {
         state.accounts = action.payload.map((acc: IUsers) => {
           let u = {
@@ -196,9 +200,15 @@ const postsSlice = createSlice({
           };
           return u;
         });
+      })
+      .addCase(getAllUsersInfo.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to fetch user ";
       });
   },
 });
+
+//
 
 export const { clearError } = postsSlice.actions;
 export const { reducer } = postsSlice;
