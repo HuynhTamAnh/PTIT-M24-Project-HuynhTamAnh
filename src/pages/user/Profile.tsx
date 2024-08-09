@@ -27,6 +27,8 @@ import {
 import { fetchUserPosts } from "../../store/slices/postsSlice";
 import EditProfileModal from "./EditProfileModal";
 import PostModal from "./PostModal";
+import FollowersList from "../user/FollowerList";
+import { getAllUsers } from "../../store/slices/friendsSlice";
 
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -35,6 +37,7 @@ const Profile: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [selectedPost, setSelectedPost] = useState<IPosts | null>(null);
+  const [isFollowersListOpen, setIsFollowersListOpen] = useState(false);
 
   const userLogin = useSelector(
     (state: RootState) => state.usersSlice.userLogin
@@ -91,6 +94,16 @@ const Profile: React.FC = () => {
   const handleClosePostModal = () => {
     setSelectedPost(null);
   };
+
+  const handleFollowersClick = () => {
+    setIsFollowersListOpen(true);
+  };
+
+  const handleCloseFollowersList = () => {
+    setIsFollowersListOpen(false);
+  };
+
+  // console.log(userLogin);
 
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#fff", color: "#000" }}>
@@ -152,23 +165,16 @@ const Profile: React.FC = () => {
               <Grid item>
                 <Typography variant="body1">
                   <Badge
-                    badgeContent={profileUser?.follower?.length || 0}
+                    badgeContent={profileUser?.friends?.length || 0}
                     color="primary"
+                    onClick={handleFollowersClick}
+                    sx={{ cursor: "pointer" }}
                   >
-                    Người theo dõi
+                    Bạn bè
                   </Badge>
                 </Typography>
               </Grid>
-              <Grid item>
-                <Typography variant="body1">
-                  <Badge
-                    badgeContent={profileUser?.following?.length || 0}
-                    color="primary"
-                  >
-                    Đang theo dõi
-                  </Badge>
-                </Typography>
-              </Grid>
+              <Grid item></Grid>
             </Grid>
             <Tabs
               value={tabValue}
@@ -246,6 +252,10 @@ const Profile: React.FC = () => {
           post={selectedPost}
         />
       )}
+      <FollowersList
+        open={isFollowersListOpen}
+        onClose={handleCloseFollowersList}
+      />
     </Box>
   );
 };
@@ -258,7 +268,7 @@ const TabPanel: React.FC<{
   const { children, value, index, ...other } = props;
 
   return (
-    <div
+    <span
       role="tabpanel"
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
@@ -270,7 +280,7 @@ const TabPanel: React.FC<{
           <Typography>{children}</Typography>
         </Box>
       )}
-    </div>
+    </span>
   );
 };
 

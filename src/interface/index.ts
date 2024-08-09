@@ -8,6 +8,7 @@ export interface IUsers {
   role: string;
   follower: string;
   following: string;
+  friends: { userId: number; date: string }[];
 }
 export interface IPosts {
   id: number;

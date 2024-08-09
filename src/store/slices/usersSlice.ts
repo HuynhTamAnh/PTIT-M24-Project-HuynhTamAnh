@@ -144,6 +144,7 @@ export const usersSlice = createSlice({
           role: action.payload.role,
           follower: action.payload.follower,
           following: action.payload.following,
+          friends: action.payload.friends,
         };
       })
       // Fetch User Profile
