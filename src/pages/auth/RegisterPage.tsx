@@ -21,6 +21,7 @@ interface RegisterFormValues {
   password: string;
   confirmPassword: string;
   phone: string;
+  avatar?: string;
 }
 
 const RegisterPage: React.FC = () => {
@@ -37,6 +38,10 @@ const RegisterPage: React.FC = () => {
       email: formValues?.email,
       password: formValues?.password,
       phone: values.phone,
+      avatar: values.avatar,
+      role: "user",
+      friends: [],
+      notifiy: [],
     };
 
     setLoading(true);
@@ -150,9 +155,11 @@ const RegisterPage: React.FC = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card className="shadow-2xl bg-white">
-          <div className="flex justify-between items-center mb-4">
-            <Title level={2}>Đăng ký</Title>
+        <Card className="shadow-2xl ligth blue">
+          <div className="flex justify-between items-center mb-4 light blue">
+            <Title level={2} style={{ color: "light blue" }}>
+              Đăng ký
+            </Title>
           </div>
           <Steps current={currentStep} className="mb-8">
             {steps.map((item) => (

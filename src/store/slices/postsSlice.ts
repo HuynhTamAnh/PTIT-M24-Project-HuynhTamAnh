@@ -27,7 +27,7 @@ export const createNewPost: any = createAsyncThunk<IPosts, Omit<IPosts, "id">>(
       date: new Date().toISOString(),
       reactions: [],
     });
-    return response.data; // Đảm bảo trả về dữ liệu từ response
+    return response.data;
   }
 );
 
@@ -46,6 +46,42 @@ export const deletePost: any = createAsyncThunk<number, number>(
     return id;
   }
 );
+
+export const getAllUsersInfo: any = createAsyncThunk(
+  "posts/getAllUsersInfo",
+  async () => {
+    const res = await instance.get("/users?role_like=user");
+    return res.data;
+  }
+);
+
+// Thêm các thunks mới cho reactions và comments
+export const addReaction: any = createAsyncThunk<
+  { postId: number; userId: string },
+  { postId: number; userId: number }
+>("posts/addReaction", async ({ postId, userId }) => {
+  const response = await instance.post(`posts/${postId}/reactions`, { userId });
+  return { postId, userId: userId.toString() };
+});
+
+export const removeReaction: any = createAsyncThunk<
+  { postId: number; userId: string },
+  { postId: number; userId: number }
+>("posts/removeReaction", async ({ postId, userId }) => {
+  await instance.delete(`posts/${postId}/reactions/${userId}`);
+  return { postId, userId: userId.toString() };
+});
+
+export const addComment: any = createAsyncThunk<
+  {
+    postId: number;
+    comment: { userId: number; content: string; date: string };
+  },
+  { postId: number; comment: { userId: number; content: string; date: string } }
+>("posts/addComment", async ({ postId, comment }) => {
+  const response = await instance.post(`posts/${postId}/comments`, comment);
+  return { postId, comment: response.data };
+});
 
 export type UserInfo = {
   id: number;
@@ -70,19 +106,10 @@ const initialState: PostsState = {
   error: null,
 };
 
-export const getAllUsersInfo: any = createAsyncThunk(
-  "posts/getAllUsersInfo",
-  async () => {
-    const res = await instance.get("/users?role_like=user"); //lấy thông tin của user trừ admin
-    return res.data;
-  }
-);
-
 const postsSlice = createSlice({
   name: "posts",
   initialState,
   reducers: {
-    // You can add any synchronous reducers here if needed
     clearError: (state) => {
       state.error = null;
     },
@@ -187,28 +214,65 @@ const postsSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || "Failed to delete post";
       })
+
+      // Get All Users Info
       .addCase(getAllUsersInfo.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(getAllUsersInfo.fulfilled, (state, action) => {
-        state.accounts = action.payload.map((acc: IUsers) => {
-          let u = {
-            id: acc.id,
-            name: acc.username,
-            avatar: acc.avatar,
-          };
-          return u;
-        });
+        state.accounts = action.payload.map((acc: IUsers) => ({
+          id: acc.id,
+          name: acc.username,
+          avatar: acc.avatar,
+        }));
+        state.loading = false;
       })
       .addCase(getAllUsersInfo.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to fetch user ";
+        state.error = action.error.message || "Failed to fetch user info";
+      })
+
+      // Add Reaction
+      .addCase(addReaction.fulfilled, (state, action) => {
+        const { postId, userId } = action.payload;
+        const post = state.posts.find((post) => post.id === postId);
+        if (post && !post.reactions.includes(userId)) {
+          post.reactions.push(userId);
+        }
+        const userPost = state.userPosts.find((post) => post.id === postId);
+        if (userPost && !userPost.reactions.includes(userId)) {
+          userPost.reactions.push(userId);
+        }
+      })
+
+      // Remove Reaction
+      .addCase(removeReaction.fulfilled, (state, action) => {
+        const { postId, userId } = action.payload;
+        const post = state.posts.find((post) => post.id === postId);
+        if (post) {
+          post.reactions = post.reactions.filter((id) => id !== userId);
+        }
+        const userPost = state.userPosts.find((post) => post.id === postId);
+        if (userPost) {
+          userPost.reactions = userPost.reactions.filter((id) => id !== userId);
+        }
+      })
+
+      // Add Comment
+      .addCase(addComment.fulfilled, (state, action) => {
+        const { postId, comment } = action.payload;
+        const post = state.posts.find((post) => post.id === postId);
+        if (post && post.comments) {
+          post.comments.push(comment);
+        }
+        const userPost = state.userPosts.find((post) => post.id === postId);
+        if (userPost && userPost.comments) {
+          userPost.comments.push(comment);
+        }
       });
   },
 });
-
-//
 
 export const { clearError } = postsSlice.actions;
 export const { reducer } = postsSlice;

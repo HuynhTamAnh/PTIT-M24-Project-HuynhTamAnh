@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 // import LoginPage from "../pages/auth/LoginPage";
 // import RegisterPage from "../pages/auth/RegisterPage";
@@ -10,8 +10,13 @@ import RegisterPage from "./pages/auth/RegisterPage";
 import Nav from "./pages/user/LeftSider";
 import { instance } from "./service";
 import axios from "axios";
+import Test from "./pages/user/test";
+import { increment } from "./store/slices/countSlice";
 const App: React.FC = () => {
-  return <Router />;
+  // const [count, setCount] = useState(1);
+  // console.log(increment(10));
+  return <Router>ggggg</Router>;
+  return <Test />;
 };
 
 export default App;
