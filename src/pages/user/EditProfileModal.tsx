@@ -26,14 +26,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [avatar, setAvatar] = useState("");
+  // const [avatar, setAvatar] = useState("");
 
   useEffect(() => {
     if (currentUser) {
       setUsername(currentUser.username);
       setEmail(currentUser.email);
       setPhone(currentUser.phone || "");
-      setAvatar(currentUser.avatar || "");
+      // setAvatar(currentUser.avatar || "");
     }
   }, [currentUser]);
 
@@ -42,7 +42,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       username,
       email,
       phone,
-      avatar,
+      // avatar,
     });
   };
 
@@ -64,7 +64,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <Typography variant="h6" component="h2" gutterBottom>
           Chỉnh sửa thông tin cá nhân
         </Typography>
-        <Avatar
+        {/* <Avatar
           src={avatar}
           sx={{ width: 100, height: 100, mx: "auto", my: 2 }}
         />
@@ -74,7 +74,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
           value={avatar}
           onChange={(e) => setAvatar(e.target.value)}
           margin="normal"
-        />
+        /> */}
         <TextField
           fullWidth
           label="Username"

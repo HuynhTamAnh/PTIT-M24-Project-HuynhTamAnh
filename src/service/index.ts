@@ -1,6 +1,8 @@
 // service.ts
 import axios from "axios";
 
+console.log(import.meta.env.VITE_API_HOST);
+
 export const instance = axios.create({
   baseURL: import.meta.env.VITE_API_HOST, // Hoặc URL của bạn
 });

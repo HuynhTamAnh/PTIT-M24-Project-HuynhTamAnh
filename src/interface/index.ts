@@ -1,13 +1,18 @@
 export interface IUsers {
   id: number;
-  username: string;
   email: string;
   password: string;
-  avatar?: string;
+  username: string;
   phone: string;
   role: string;
-  follower: string;
-  following: string;
+  avatar: string;
+  friends?: Array<{ userId: number; status: boolean; date: string }>;
+  notify?: Array<[string, string, string]>; // [userId, message, date]
+}
+export interface IComment {
+  userId: number;
+  content: string;
+  date: string;
 }
 export interface IPosts {
   id: number;
@@ -17,4 +22,5 @@ export interface IPosts {
   userId: number;
   date: string;
   privacy: string;
+  comments: IComment[];
 }

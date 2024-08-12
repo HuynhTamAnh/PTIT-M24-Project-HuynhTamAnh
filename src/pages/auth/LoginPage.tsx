@@ -31,6 +31,7 @@ const LoginPage: React.FC = () => {
       const result = await dispatch(
         loginUser({ email: values.email, password: values.password })
       ).unwrap();
+      console.log("Login result:", result);
       message.success("Đăng nhập thành công!");
       //kiểm tra role nếu là admin thì chuyển hướng đến trang admin nếu là users thì chuyển hướng qua trang chủ bình thường
       if (result.user.role === "admin") {

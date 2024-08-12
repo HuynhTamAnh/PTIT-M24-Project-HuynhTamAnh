@@ -19,15 +19,20 @@ import {
 } from "@mui/icons-material";
 import { AppDispatch, RootState } from "../../store";
 import { IUsers, IPosts } from "../../interface";
+
 import {
   logout,
   updateUserProfile,
   fetchUserProfile,
+  fetchUserFriends,
 } from "../../store/slices/usersSlice";
 import { fetchUserPosts } from "../../store/slices/postsSlice";
 import EditProfileModal from "./EditProfileModal";
 import PostModal from "./PostModal";
-
+import FollowersList from "../user/FollowerList";
+import { getAllUsers } from "../../store/slices/friendsSlice";
+import AvatarUploadModal from "./AvatarUploadModal";
+import FullPostModal from "./PostModal";
 const Profile: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
@@ -35,6 +40,9 @@ const Profile: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [selectedPost, setSelectedPost] = useState<IPosts | null>(null);
+  const [isFollowersListOpen, setIsFollowersListOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  // const [selectedPost, setSelectedPost] = useState<IPosts | null>(null);
 
   const userLogin = useSelector(
     (state: RootState) => state.usersSlice.userLogin
@@ -45,11 +53,15 @@ const Profile: React.FC = () => {
   const userPosts = useSelector(
     (state: RootState) => state.postsSlice.userPosts
   ) as IPosts[];
+  const currentProfileFriends = useSelector(
+    (state: RootState) => state.usersSlice.currentProfileFriends
+  );
 
   useEffect(() => {
     if (userId) {
       dispatch(fetchUserProfile(userId));
       dispatch(fetchUserPosts(userId));
+      dispatch(fetchUserFriends(parseInt(userId)));
     }
   }, [dispatch, userId]);
 
@@ -92,14 +104,34 @@ const Profile: React.FC = () => {
     setSelectedPost(null);
   };
 
+  const handleFollowersClick = () => {
+    setIsFollowersListOpen(true);
+  };
+
+  const handleCloseFollowersList = () => {
+    setIsFollowersListOpen(false);
+  };
+
+  // console.log(userLogin);
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "#fff", color: "#000" }}>
       <Container sx={{ mt: 8 }}>
         <Grid container spacing={2}>
           <Grid item xs={12} md={3} textAlign="center">
             <Avatar
-              sx={{ width: 100, height: 100, mx: "auto" }}
+              sx={{
+                width: 100,
+                height: 100,
+                mx: "auto",
+                cursor: isOwnProfile ? "pointer" : "default",
+              }}
               src={profileUser?.avatar}
+              onClick={() => {
+                if (isOwnProfile) {
+                  setIsAvatarModalOpen(true);
+                }
+              }}
             />
             <Typography variant="h6" sx={{ mt: 2 }}>
               {profileUser?.username}
@@ -152,23 +184,16 @@ const Profile: React.FC = () => {
               <Grid item>
                 <Typography variant="body1">
                   <Badge
-                    badgeContent={profileUser?.follower?.length || 0}
+                    badgeContent={profileUser?.friends?.length || 0}
                     color="primary"
+                    onClick={handleFollowersClick}
+                    sx={{ cursor: "pointer" }}
                   >
-                    Người theo dõi
+                    Bạn bè
                   </Badge>
                 </Typography>
               </Grid>
-              <Grid item>
-                <Typography variant="body1">
-                  <Badge
-                    badgeContent={profileUser?.following?.length || 0}
-                    color="primary"
-                  >
-                    Đang theo dõi
-                  </Badge>
-                </Typography>
-              </Grid>
+              <Grid item></Grid>
             </Grid>
             <Tabs
               value={tabValue}
@@ -209,15 +234,22 @@ const Profile: React.FC = () => {
                         }}
                       />
                       {post.image.length > 1 && (
-                        <Badge
-                          badgeContent={post.image.length}
-                          color="primary"
+                        <Box
                           sx={{
                             position: "absolute",
                             top: 8,
                             right: 8,
+                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                            color: "white",
+                            borderRadius: "4px",
+                            padding: "2px 6px",
+                            fontSize: "0.75rem",
                           }}
-                        />
+                        >
+                          <Typography variant="caption">
+                            {post.image.length}
+                          </Typography>
+                        </Box>
                       )}
                     </Box>
                   </Grid>
@@ -240,10 +272,22 @@ const Profile: React.FC = () => {
         currentUser={userLogin}
       />
       {selectedPost && (
-        <PostModal
+        <FullPostModal
           open={!!selectedPost}
           onClose={handleClosePostModal}
           post={selectedPost}
+        />
+      )}
+      <FollowersList
+        open={isFollowersListOpen}
+        onClose={handleCloseFollowersList}
+      />
+      {isOwnProfile && (
+        <AvatarUploadModal
+          isVisible={isAvatarModalOpen}
+          onClose={() => setIsAvatarModalOpen(false)}
+          userId={profileUser?.id || 0}
+          currentAvatar={profileUser?.avatar || ""}
         />
       )}
     </Box>
@@ -258,7 +302,7 @@ const TabPanel: React.FC<{
   const { children, value, index, ...other } = props;
 
   return (
-    <div
+    <span
       role="tabpanel"
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
@@ -270,7 +314,7 @@ const TabPanel: React.FC<{
           <Typography>{children}</Typography>
         </Box>
       )}
-    </div>
+    </span>
   );
 };
 

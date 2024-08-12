@@ -19,6 +19,7 @@ import {
   AddCircle as AddCircleIcon,
   Person as PersonIcon,
   ExitToApp as ExitToAppIcon,
+  Group,
 } from "@mui/icons-material";
 
 interface LeftSiderProps {
@@ -40,7 +41,6 @@ const LeftSider: React.FC<LeftSiderProps> = ({ showModal, userId }) => {
   const menuItems = [
     { key: "/", icon: <HomeIcon />, text: "Home" },
     { key: "/search", icon: <SearchIcon />, text: "Search" },
-    { key: "/explore", icon: <ExploreIcon />, text: "Explore" },
     { key: "/notifications", icon: <FavoriteIcon />, text: "Notifications" },
     { key: "create", icon: <AddCircleIcon />, text: "Create" },
     { key: `/profile/${userId}`, icon: <PersonIcon />, text: "Profile" },
