@@ -20,14 +20,11 @@ const HomePage: React.FC = () => {
   ) as IUsers | null;
 
   useEffect(() => {
+    dispatch(getNewPosts());
     const token = localStorage.getItem("accessToken");
-    console.log(token);
-
     if (token) {
       dispatch(autoLogin());
-    } else {
-      ("/login");
-    }
+    } else "/login";
   }, []);
 
   const showModal = () => {
