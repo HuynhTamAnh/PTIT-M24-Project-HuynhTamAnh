@@ -167,15 +167,13 @@ export const acceptFriendRequest: any = createAsyncThunk(
     };
 
     await instance.patch(`users/${data.accepterId}`, accepterUpdate);
-    const response = await instance.patch(
-      `users/${data.requesterId}`,
-      requesterUpdate
-    );
+    await instance.patch(`users/${data.requesterId}`, requesterUpdate);
 
-    dispatch(fetchUserProfile(data.accepterId.toString()));
-    dispatch(fetchUserProfile(data.requesterId.toString()));
-
-    return response.data;
+    // Return the updated accepter and requester
+    return {
+      accepter: { ...accepter, ...accepterUpdate },
+      requester: { ...requester, ...requesterUpdate },
+    };
   }
 );
 export const fetchUserFriends: any = createAsyncThunk(
@@ -216,6 +214,30 @@ export const rejectFriendRequest: any = createAsyncThunk(
 
     dispatch(fetchUserProfile(data.rejecterId.toString()));
     return response.data;
+  }
+);
+export const removeFriend: any = createAsyncThunk(
+  "users/removeFriend",
+  async (data: { userId: number; friendId: number }) => {
+    const userResponse = await instance.get(`users/${data.userId}`);
+    const friendResponse = await instance.get(`users/${data.friendId}`);
+    const user = userResponse.data;
+    const friend = friendResponse.data;
+
+    const userUpdate = {
+      friends: user.friends.filter((f: any) => f.userId !== data.friendId),
+    };
+    const friendUpdate = {
+      friends: friend.friends.filter((f: any) => f.userId !== data.userId),
+    };
+
+    await instance.patch(`users/${data.userId}`, userUpdate);
+    await instance.patch(`users/${data.friendId}`, friendUpdate);
+
+    return {
+      updatedUser: { ...user, ...userUpdate },
+      removedFriendId: data.friendId,
+    };
   }
 );
 // Slice
@@ -388,8 +410,29 @@ export const usersSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(acceptFriendRequest.fulfilled, (state) => {
+      .addCase(acceptFriendRequest.fulfilled, (state, action) => {
         state.loading = false;
+        if (
+          state.userLogin &&
+          state.userLogin.id === action.payload.accepter.id
+        ) {
+          state.userLogin = action.payload.accepter;
+        }
+        if (
+          state.profileUser &&
+          state.profileUser.id === action.payload.accepter.id
+        ) {
+          state.profileUser = action.payload.accepter;
+        }
+        // Update currentProfileFriends
+        if (state.currentProfileFriends) {
+          state.currentProfileFriends = [
+            ...state.currentProfileFriends.filter(
+              (friend) => friend.id !== action.payload.requester.id
+            ),
+            action.payload.requester,
+          ];
+        }
         state.error = null;
       })
       .addCase(acceptFriendRequest.rejected, (state, action) => {
@@ -405,6 +448,20 @@ export const usersSlice = createSlice({
         }
         if (state.profileUser && state.profileUser.id === action.payload.id) {
           state.profileUser = action.payload;
+        }
+      })
+      .addCase(removeFriend.fulfilled, (state, action) => {
+        if (
+          state.userLogin &&
+          state.userLogin.id === action.payload.updatedUser.id
+        ) {
+          state.userLogin = action.payload.updatedUser;
+        }
+        if (
+          state.profileUser &&
+          state.profileUser.id === action.payload.updatedUser.id
+        ) {
+          state.profileUser = action.payload.updatedUser;
         }
       });
   },

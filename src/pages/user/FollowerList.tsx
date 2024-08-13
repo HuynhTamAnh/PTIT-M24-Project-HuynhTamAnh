@@ -25,6 +25,7 @@ import {
   cancelFriendRequest,
   rejectFriendRequest,
   acceptFriendRequest,
+  removeFriend,
 } from "../../store/slices/usersSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -47,14 +48,32 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
   const currentProfileFriends = useSelector(
     (state: RootState) => state.usersSlice.currentProfileFriends
   );
+  const [localFriends, setLocalFriends] = useState<IUsers[]>([]);
+  const [localFriendRequests, setLocalFriendRequests] = useState<any[]>([]);
+
   // const isOwnProfile = userLogin?.id === parseInt(userId);
   useEffect(() => {
     dispatch(getAllUsers());
-  }, [dispatch]);
+    setLocalFriends(currentProfileFriends);
+    if (userLogin && userLogin.notify) {
+      setLocalFriendRequests(
+        userLogin.notify.filter((notif) =>
+          notif[1].includes("đã gửi lời mời kết bạn")
+        )
+      );
+    }
+  }, [dispatch, currentProfileFriends, userLogin]);
 
   const handleRejectFriendRequest = (requesterId: number) => {
     if (userLogin) {
-      dispatch(rejectFriendRequest({ rejecterId: userLogin.id, requesterId }));
+      dispatch(
+        rejectFriendRequest({ rejecterId: userLogin.id, requesterId })
+      ).then(() => {
+        // Remove the request from localFriendRequests
+        setLocalFriendRequests((prev) =>
+          prev.filter((notif) => parseInt(notif[0]) !== requesterId)
+        );
+      });
     }
   };
   const handleSendFriendRequest = (receiverId: number) => {
@@ -71,7 +90,31 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
 
   const handleAcceptFriendRequest = (requesterId: number) => {
     if (userLogin) {
-      dispatch(acceptFriendRequest({ accepterId: userLogin.id, requesterId }));
+      dispatch(
+        acceptFriendRequest({ accepterId: userLogin.id, requesterId })
+      ).then((action) => {
+        if (acceptFriendRequest.fulfilled.match(action)) {
+          // Remove the request from localFriendRequests
+          setLocalFriendRequests((prev) =>
+            prev.filter((notif) => parseInt(notif[0]) !== requesterId)
+          );
+
+          // Update localFriends, avoiding duplicates
+          setLocalFriends((prev) => {
+            const newFriend = action.payload.requester;
+            // Check if the friend already exists in the list
+            const friendExists = prev.some(
+              (friend) => friend.id === newFriend.id
+            );
+            if (!friendExists) {
+              // Only add if the friend doesn't exist
+              return [...prev, newFriend];
+            }
+            // If the friend already exists, just return the current list
+            return prev;
+          });
+        }
+      });
     }
   };
 
@@ -129,6 +172,16 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
     navigate(`/profile/${userId}`);
     onClose();
   };
+  const handleRemoveFriend = (friendId: number) => {
+    if (userLogin) {
+      dispatch(removeFriend({ userId: userLogin.id, friendId })).then(() => {
+        setLocalFriends((prevFriends) =>
+          prevFriends.filter((friend) => friend.id !== friendId)
+        );
+      });
+    }
+  };
+
   return (
     <Dialog onClose={onClose} open={open} fullWidth maxWidth="xs">
       <DialogTitle>
@@ -206,64 +259,69 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
           />
         </Box>
         <List sx={{ pt: 0 }}>
-          {currentProfileFriends
+          {Array.from(new Set(localFriends.map((a) => a.id)))
+            .map((id) => localFriends.find((a) => a.id === id))
             .filter((friend: any) =>
               friend.username.toLowerCase().includes(searchTerm.toLowerCase())
             )
-            .map((friend: IUsers) => (
-              <ListItem button key={friend.id}>
+            .map((friend: IUsers | undefined) => (
+              <ListItem button key={friend?.id}>
                 <ListItemAvatar>
-                  <Avatar src={friend.avatar} />
+                  <Avatar src={friend?.avatar} />
                 </ListItemAvatar>
                 <ListItemText
-                  primary={friend.username}
-                  secondary={friend.email}
+                  primary={friend?.username}
+                  secondary={friend?.email}
                   onClick={() => handleNavigateToProfile(friend.id)}
                   sx={{ cursor: "pointer" }}
                 />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleRemoveFriend(friend.id)}
+                  color="error"
+                >
+                  Huỷ kết bạn
+                </Button>
               </ListItem>
             ))}
         </List>
       </CustomTabPanel>
       <CustomTabPanel value={value} index={1}>
         <List sx={{ pt: 0 }}>
-          {userLogin?.notify
-            ?.filter((notif) => notif[1].includes("đã gửi lời mời kết bạn"))
-            .map((notif, index) => {
-              const requesterId = parseInt(notif[0]);
-              const requester = friendsList.find(
-                (user: IUsers) => user.id === requesterId
-              );
-              return (
-                <ListItem key={index}>
-                  <ListItemAvatar>
-                    <Avatar src={requester?.avatar} />
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={requester?.username || `User ID: ${requesterId}`}
-                    secondary={`Ngày gửi: ${new Date(
-                      notif[2]
-                    ).toLocaleString()}`}
-                  />
-                  <Button
-                    variant="contained"
-                    size="small"
-                    onClick={() => handleAcceptFriendRequest(requesterId)}
-                    sx={{ mr: 1 }}
-                  >
-                    Chấp nhận
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleRejectFriendRequest(requesterId)}
-                    color="error"
-                  >
-                    Từ chối
-                  </Button>
-                </ListItem>
-              );
-            })}
+          {localFriendRequests.map((notif, index) => {
+            const requesterId = parseInt(notif[0]);
+            const requester = friendsList.find(
+              (user: IUsers) => user.id === requesterId
+            );
+            return (
+              <ListItem key={index}>
+                <ListItemAvatar>
+                  <Avatar src={requester?.avatar} />
+                </ListItemAvatar>
+                <ListItemText
+                  primary={requester?.username || `User ID: ${requesterId}`}
+                  secondary={`Ngày gửi: ${new Date(notif[2]).toLocaleString()}`}
+                />
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={() => handleAcceptFriendRequest(requesterId)}
+                  sx={{ mr: 1 }}
+                >
+                  Chấp nhận
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => handleRejectFriendRequest(requesterId)}
+                  color="error"
+                >
+                  Từ chối
+                </Button>
+              </ListItem>
+            );
+          })}
         </List>
       </CustomTabPanel>
       <CustomTabPanel value={value} index={2}>
