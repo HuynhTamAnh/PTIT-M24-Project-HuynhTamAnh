@@ -14,6 +14,7 @@ body,
   overflow: auto;
   padding-left: 180px;
   padding-right: 180px;
+  background-color: #000; /* Ensure background color matches */
 }
 
 .ant-layout-sider {
@@ -21,10 +22,27 @@ body,
 }
 
 .ant-card {
-  background: #121212 !important;
-  color: #fff !important;
+  background: #121212;
+  color: #fff;
 }
 
 .ant-card-actions > li > span {
-  color: #fff !important;
+  color: #fff;
+}
+
+/* Increase specificity if necessary */
+.ant-layout .ant-card {
+  background: #121212;
+  color: #fff;
+}
+
+.ant-statistic-title,
+.ant-statistic-content-value {
+  color: white !important;
+}
+
+/* Use theme overrides if possible */
+:root {
+  --ant-primary-color: #121212;
+  --ant-text-color: #fff;
 }

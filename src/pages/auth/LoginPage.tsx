@@ -31,16 +31,33 @@ const LoginPage: React.FC = () => {
       const result = await dispatch(
         loginUser({ email: values.email, password: values.password })
       ).unwrap();
+      console.log("Login result:", result);
+
+      if (result.user.isLocked) {
+        message.error(
+          "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên."
+        );
+        return;
+      }
+
       message.success("Đăng nhập thành công!");
-      //kiểm tra role nếu là admin thì chuyển hướng đến trang admin nếu là users thì chuyển hướng qua trang chủ bình thường
       if (result.user.role === "admin") {
         navigate("/admin");
       } else {
         navigate("/");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      message.error("Sai email hoặc mật khẩu!");
+      if (
+        error.message ===
+        "This account has been locked. Please contact an administrator."
+      ) {
+        message.error(
+          "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên."
+        );
+      } else {
+        message.error("Sai email hoặc mật khẩu!");
+      }
     }
   };
 

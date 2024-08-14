@@ -1,13 +1,20 @@
 export interface IUsers {
   id: number;
-  username: string;
   email: string;
   password: string;
-  avatar?: string;
+  username: string;
   phone: string;
   role: string;
-  follower: string;
-  following: string;
+  avatar: string;
+  status: boolean;
+  isLocked: boolean;
+  friends?: Array<{ userId: number; status: boolean; date: string }>;
+  notify?: Array<[string, string, string]>; // [userId, message, date]
+}
+export interface IComment {
+  userId: number;
+  content: string;
+  date: string;
 }
 export interface IPosts {
   id: number;
@@ -17,4 +24,30 @@ export interface IPosts {
   userId: number;
   date: string;
   privacy: string;
+  comments: IComment[];
+}
+export interface GroupMember {
+  userId: number;
+  role: boolean;
+  dateJoin: string;
+}
+
+export interface GroupPost {
+  idPostGroup: number;
+  userId: number;
+  content: string;
+  img: string[];
+  dateat: string;
+}
+
+export interface Group {
+  id: number;
+  groupName: string;
+  dateAt: string;
+  avatar: string;
+  // coverimg: string;
+  status: boolean;
+  members: GroupMember[];
+  postGroup: GroupPost[];
+  isLocked: boolean;
 }

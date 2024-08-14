@@ -7,12 +7,13 @@ import {
   Select,
   MenuItem,
   Button,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import Upload from "../../firebase/configFirebase";
 import { IPosts } from "../../interface";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../store";
-// Import action creator để tạo bài đăng mới (giả sử bạn đã tạo action này)
 import { createNewPost } from "../../store/slices/postsSlice";
 
 interface UploadModalProps {
@@ -28,7 +29,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [content, setContent] = useState("");
-  const [privacy, setPrivacy] = useState("public");
+  const [privacy, setPrivacy] = useState<"public" | "private">("public");
   const [image, setImage] = useState<string[]>([]);
 
   const handleSubmit = () => {
@@ -39,6 +40,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
       image,
       privacy,
       userId,
+      comments: [],
     };
 
     dispatch(createNewPost(newPost));
@@ -78,16 +80,18 @@ const UploadModal: React.FC<UploadModalProps> = ({
           onChange={(e) => setContent(e.target.value)}
           sx={{ mb: 2 }}
         />
-        <Select
-          fullWidth
-          value={privacy}
-          onChange={(e) => setPrivacy(e.target.value)}
-          sx={{ mb: 2 }}
-        >
-          <MenuItem value="public">Everyone</MenuItem>
-          <MenuItem value="friends">Friends</MenuItem>
-          <MenuItem value="private">Only me</MenuItem>
-        </Select>
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel id="privacy-select-label">Privacy</InputLabel>
+          <Select
+            labelId="privacy-select-label"
+            value={privacy}
+            label="Privacy"
+            onChange={(e) => setPrivacy(e.target.value as "public" | "private")}
+          >
+            <MenuItem value="public">Public</MenuItem>
+            <MenuItem value="private">Private</MenuItem>
+          </Select>
+        </FormControl>
         <Upload images={image} setImages={setImage} />
         <Button
           variant="contained"
