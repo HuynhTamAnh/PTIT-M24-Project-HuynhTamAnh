@@ -15,7 +15,9 @@ import {
   DialogActions,
   TextField,
   CardActionArea,
+  CardActions,
 } from "@mui/material";
+import LockIcon from "@mui/icons-material/Lock";
 import { AppDispatch, RootState } from "../../store";
 import {
   allGroups,
@@ -24,6 +26,7 @@ import {
   removeUserFromGroup,
 } from "../../store/slices/groupsSlice";
 import { Group, GroupMember } from "../../interface";
+import { LockOutlined } from "@ant-design/icons";
 
 const Groups: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -50,6 +53,7 @@ const Groups: React.FC = () => {
             dateAt: new Date().toISOString(),
             avatar: "",
             status: true,
+            isLocked: false,
             members: [
               {
                 userId: userLogin.id,
@@ -68,8 +72,12 @@ const Groups: React.FC = () => {
     }
   };
 
-  const handleGroupClick = (groupId: number) => {
-    navigate(`/groups/${groupId}`);
+  const handleGroupClick = (group: Group) => {
+    if (group.isLocked) {
+      alert("This group is locked and cannot be accessed.");
+    } else {
+      navigate(`/groups/${group.id}`);
+    }
   };
 
   const handleJoinLeaveGroup = (event: React.MouseEvent, group: Group) => {
@@ -111,10 +119,13 @@ const Groups: React.FC = () => {
             const isMember = group.members.some(
               (member: GroupMember) => member.userId === userLogin?.id
             );
+            const isAdmin =
+              group.members.find((member: GroupMember) => member.role === true)
+                ?.userId === userLogin?.id;
             return (
               <Grid item xs={12} sm={6} md={4} key={group.id}>
-                <Card onClick={() => handleGroupClick(group.id)}>
-                  <CardActionArea>
+                <Card>
+                  <CardActionArea onClick={() => handleGroupClick(group)}>
                     <CardMedia
                       component="img"
                       height="140"
@@ -126,20 +137,33 @@ const Groups: React.FC = () => {
                     <CardContent>
                       <Typography variant="h6" component="div">
                         {group.groupName}
+                        {group.isLocked && (
+                          <LockIcon
+                            sx={{
+                              marginLeft: 1,
+                              verticalAlign: "middle",
+                              color: "action.active",
+                            }}
+                          />
+                        )}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Members: {group.members.length}
                       </Typography>
                     </CardContent>
                   </CardActionArea>
-                  <Button
-                    variant="contained"
-                    color={isMember ? "secondary" : "primary"}
-                    onClick={(e) => handleJoinLeaveGroup(e, group)}
-                    sx={{ m: 1 }}
-                  >
-                    {isMember ? "Leave Group" : "Join Group"}
-                  </Button>
+                  {userLogin && !isAdmin && !group.isLocked && (
+                    <CardActions>
+                      <Button
+                        variant="contained"
+                        color={isMember ? "secondary" : "primary"}
+                        onClick={(e) => handleJoinLeaveGroup(e, group)}
+                        fullWidth
+                      >
+                        {isMember ? "Leave Group" : "Join Group"}
+                      </Button>
+                    </CardActions>
+                  )}
                 </Card>
               </Grid>
             );

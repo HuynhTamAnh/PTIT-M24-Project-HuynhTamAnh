@@ -6,6 +6,8 @@ export interface IUsers {
   phone: string;
   role: string;
   avatar: string;
+  status: boolean;
+  isLocked: boolean;
   friends?: Array<{ userId: number; status: boolean; date: string }>;
   notify?: Array<[string, string, string]>; // [userId, message, date]
 }
@@ -47,4 +49,5 @@ export interface Group {
   status: boolean;
   members: GroupMember[];
   postGroup: GroupPost[];
+  isLocked: boolean;
 }

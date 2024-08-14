@@ -1,4 +1,3 @@
-// src/components/DashboardLayout.tsx
 import React from "react";
 import { Layout, Menu } from "antd";
 import { Link, Outlet, useNavigate } from "react-router-dom";
@@ -8,12 +7,13 @@ import {
   UserOutlined,
   FileTextOutlined,
   TeamOutlined,
+  DashboardOutlined,
 } from "@ant-design/icons";
-import { logout } from "../../store/slices/usersSlice"; // Đảm bảo đường dẫn này chính xác
+import { logout } from "../../store/slices/usersSlice";
 
 const { Sider, Content } = Layout;
 
-const DashboardLayout = () => {
+const AdminLayout: React.FC = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -24,36 +24,32 @@ const DashboardLayout = () => {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider theme="dark">
-        <div className="logo" />
-        <Menu theme="dark" mode="inline" defaultSelectedKeys={["users"]}>
-          <Menu.Item key="users" icon={<UserOutlined />}>
+      <Sider>
+        <Menu theme="dark" mode="inline" defaultSelectedKeys={["1"]}>
+          <Menu.Item key="1" icon={<DashboardOutlined />}>
+            <Link to="/admin">Dashboard</Link>
+          </Menu.Item>
+          <Menu.Item key="2" icon={<UserOutlined />}>
             <Link to="/admin/users">Users</Link>
           </Menu.Item>
-          <Menu.Item key="posts" icon={<FileTextOutlined />}>
+          <Menu.Item key="3" icon={<FileTextOutlined />}>
             <Link to="/admin/posts">Posts</Link>
           </Menu.Item>
-          <Menu.Item key="groups" icon={<TeamOutlined />}>
+          <Menu.Item key="4" icon={<TeamOutlined />}>
             <Link to="/admin/groups">Groups</Link>
           </Menu.Item>
-          <Menu.Item
-            key="logout"
-            icon={<LogoutSharpIcon />}
-            onClick={handleLogout}
-          >
+          <Menu.Item key="5" icon={<LogoutSharpIcon />} onClick={handleLogout}>
             Log Out
           </Menu.Item>
         </Menu>
       </Sider>
       <Layout>
-        <Content style={{ margin: "24px 16px 0" }}>
-          <div style={{ padding: 24, background: "#fff", minHeight: 360 }}>
-            <Outlet />
-          </div>
+        <Content style={{ margin: "24px 16px", padding: 24, minHeight: 280 }}>
+          <Outlet />
         </Content>
       </Layout>
     </Layout>
   );
 };
 
-export default DashboardLayout;
+export default AdminLayout;

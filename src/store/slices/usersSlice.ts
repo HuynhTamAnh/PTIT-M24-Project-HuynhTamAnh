@@ -11,6 +11,13 @@ export const createNewUsers: any = createAsyncThunk(
     return response.data;
   }
 );
+export const getAllUsers: any = createAsyncThunk(
+  "users/getAllUsers",
+  async () => {
+    const response = await instance.get("users?role_like=user");
+    return response.data;
+  }
+);
 
 export const createNewAvatar: any = createAsyncThunk(
   "users/avatar",
@@ -23,7 +30,13 @@ export const loginUser: any = createAsyncThunk(
   "users/login",
   async (data: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      return await loginApi(data);
+      const response = await loginApi(data);
+      if (response.user.isLocked) {
+        return rejectWithValue(
+          "This account has been locked. Please contact an administrator."
+        );
+      }
+      return response;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -238,6 +251,22 @@ export const removeFriend: any = createAsyncThunk(
       updatedUser: { ...user, ...userUpdate },
       removedFriendId: data.friendId,
     };
+  }
+);
+export const deleteUser: any = createAsyncThunk(
+  "users/deleteUser",
+  async (userId: number) => {
+    await instance.delete(`/users/${userId}`);
+    return userId;
+  }
+);
+export const toggleUserLock: any = createAsyncThunk(
+  "users/toggleUserLock",
+  async (data: { userId: number; isLocked: boolean }) => {
+    const response = await instance.patch(`users/${data.userId}`, {
+      isLocked: data.isLocked,
+    });
+    return response.data;
   }
 );
 // Slice
@@ -463,7 +492,24 @@ export const usersSlice = createSlice({
         ) {
           state.profileUser = action.payload.updatedUser;
         }
-      });
+      })
+      .addCase(getAllUsers.fulfilled, (state, action) => {
+        state.users = action.payload;
+      })
+      .addCase(deleteUser.fulfilled, (state, action: PayloadAction<number>) => {
+        state.users = state.users.filter((user) => user.id !== action.payload);
+      })
+      .addCase(
+        toggleUserLock.fulfilled,
+        (state, action: PayloadAction<IUsers>) => {
+          const index = state.users.findIndex(
+            (user) => user.id === action.payload.id
+          );
+          if (index !== -1) {
+            state.users[index] = action.payload;
+          }
+        }
+      );
   },
 });
 

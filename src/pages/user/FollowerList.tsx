@@ -26,6 +26,7 @@ import {
   rejectFriendRequest,
   acceptFriendRequest,
   removeFriend,
+  fetchUserFriends,
 } from "../../store/slices/usersSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store";
@@ -50,19 +51,28 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
   );
   const [localFriends, setLocalFriends] = useState<IUsers[]>([]);
   const [localFriendRequests, setLocalFriendRequests] = useState<any[]>([]);
-
+  const [currentProfileId, setCurrentProfileId] = useState<number>(0);
   // const isOwnProfile = userLogin?.id === parseInt(userId);
   useEffect(() => {
     dispatch(getAllUsers());
-    setLocalFriends(currentProfileFriends);
-    if (userLogin && userLogin.notify) {
-      setLocalFriendRequests(
-        userLogin.notify.filter((notif) =>
-          notif[1].includes("đã gửi lời mời kết bạn")
-        )
-      );
+    if (userLogin) {
+      dispatch(fetchUserFriends(userLogin.id)).then((action) => {
+        setLocalFriends(action.payload);
+      });
+      if (userLogin.notify) {
+        setLocalFriendRequests(
+          userLogin.notify.filter((notif) =>
+            notif[1].includes("đã gửi lời mời kết bạn")
+          )
+        );
+      }
     }
-  }, [dispatch, currentProfileFriends, userLogin]);
+    // Lấy ID của trang profile hiện tại
+    const currentProfileId = parseInt(
+      window.location.pathname.split("/").pop() || "0"
+    );
+    setCurrentProfileId(currentProfileId);
+  }, [dispatch, userLogin, localFriends]);
 
   const handleRejectFriendRequest = (requesterId: number) => {
     if (userLogin) {
@@ -119,23 +129,16 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
   };
 
   const filterFriends = () => {
-    if (!userLogin || !userLogin.friends) return [];
-    return friendsList.filter((user: IUsers) =>
-      userLogin.friends?.some(
-        (friend) => user.id === friend.userId && friend.status
-      )
-    );
+    return localFriends;
   };
 
   const filterNonFriends = () => {
-    if (!userLogin || !userLogin.friends) return [];
+    if (!userLogin) return [];
     return friendsList.filter(
       (user: IUsers) =>
         user.id !== userLogin.id &&
         user.role === "user" &&
-        !userLogin.friends?.some(
-          (friend) => friend.userId === user.id && friend.status
-        )
+        !localFriends.some((friend) => friend.id === user.id)
     );
   };
 
@@ -162,12 +165,10 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
   const navigate = useNavigate();
   const filteredFriends = searchUsers(filterFriends());
   const filteredNonFriends = searchUsers(filterNonFriends());
-  const friendCount = filteredFriends.length;
-  const friendRequestCount =
-    userLogin?.notify?.filter((notif) =>
-      notif[1].includes("đã gửi lời mời kết bạn")
-    ).length || 0;
-  const suggestedFriendCount = filteredNonFriends.length;
+  const friendCount = localFriends.length;
+  const friendRequestCount = localFriendRequests.length;
+  const suggestedFriendCount = filterNonFriends().length;
+  // const suggestedFriendCount = filteredNonFriends.length;
   const handleNavigateToProfile = (userId: number) => {
     navigate(`/profile/${userId}`);
     onClose();
@@ -259,19 +260,18 @@ const FollowersList: React.FC<FollowersListProps> = ({ open, onClose }) => {
           />
         </Box>
         <List sx={{ pt: 0 }}>
-          {Array.from(new Set(localFriends.map((a) => a.id)))
-            .map((id) => localFriends.find((a) => a.id === id))
-            .filter((friend: any) =>
+          {localFriends
+            .filter((friend) =>
               friend.username.toLowerCase().includes(searchTerm.toLowerCase())
             )
-            .map((friend: IUsers | undefined) => (
-              <ListItem button key={friend?.id}>
+            .map((friend: IUsers) => (
+              <ListItem button key={friend.id}>
                 <ListItemAvatar>
-                  <Avatar src={friend?.avatar} />
+                  <Avatar src={friend.avatar} />
                 </ListItemAvatar>
                 <ListItemText
-                  primary={friend?.username}
-                  secondary={friend?.email}
+                  primary={friend.username}
+                  secondary={friend.email}
                   onClick={() => handleNavigateToProfile(friend.id)}
                   sx={{ cursor: "pointer" }}
                 />

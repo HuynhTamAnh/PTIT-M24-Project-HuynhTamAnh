@@ -157,20 +157,35 @@ export const fetchUserById: any = createAsyncThunk(
     }
   }
 );
+
 export const updateGroupAvatar: any = createAsyncThunk(
   "groups/updateGroupAvatar",
   async (
-    { groupId, avatar }: { groupId: number; avatar: string },
+    { groupId, avatar }: { groupId: number; avatar: FormData },
     thunkAPI
   ) => {
     try {
-      const response = await instance.patch(`groups/${groupId}`, { avatar });
-      return response.data;
+      const response = await instance.patch(
+        `groups/${groupId}/avatar`,
+        avatar,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      // Chuyển đổi dữ liệu nếu cần
+      const avatarUrl =
+        typeof response.data.avatar === "string"
+          ? response.data.avatar
+          : response.data.avatar.url;
+      return { ...response.data, avatar: avatarUrl };
     } catch (error) {
       return thunkAPI.rejectWithValue("Failed to update group avatar");
     }
   }
 );
+
 export const updateGroupPost: any = createAsyncThunk(
   "groups/updateGroupPost",
   async (
@@ -225,6 +240,68 @@ export const deleteGroupPost: any = createAsyncThunk(
       });
 
       return { groupId, updatedGroup: response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || "An error occurred");
+    }
+  }
+);
+export const deleteGroup: any = createAsyncThunk(
+  "groups/deleteGroup",
+  async (
+    { groupId, userId }: { groupId: number; userId: number },
+    { getState, rejectWithValue }
+  ) => {
+    try {
+      const state = getState() as RootState;
+      const group = state.groupsSlice.groups.find(
+        (g: Group) => g.id === groupId
+      );
+
+      if (!group) {
+        throw new Error("Group not found");
+      }
+
+      const isAdmin = group.members.some(
+        (member: GroupMember) =>
+          member.userId === userId && member.role === true
+      );
+
+      if (!isAdmin) {
+        throw new Error("User does not have permission to delete this group");
+      }
+
+      await instance.delete(`groups/${groupId}`);
+
+      return groupId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.message || "An error occurred while deleting the group"
+      );
+    }
+  }
+);
+export const lockGroup: any = createAsyncThunk(
+  "groups/lockGroup",
+  async (groupId: number, { rejectWithValue }) => {
+    try {
+      const response = await instance.patch(`groups/${groupId}`, {
+        isLocked: true,
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || "An error occurred");
+    }
+  }
+);
+
+export const unlockGroup: any = createAsyncThunk(
+  "groups/unlockGroup",
+  async (groupId: number, { rejectWithValue }) => {
+    try {
+      const response = await instance.patch(`groups/${groupId}`, {
+        isLocked: false,
+      });
+      return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "An error occurred");
     }
@@ -350,12 +427,44 @@ const groupsSlice = createSlice({
         state.groups.push(action.payload);
       })
       .addCase(updateGroupAvatar.fulfilled, (state, action) => {
+        console.log("Update avatar response:", action.payload);
+        if (state.currentGroup && state.currentGroup.id === action.payload.id) {
+          state.currentGroup.avatar = action.payload.avatar;
+        }
+        const index = state.groups.findIndex(
+          (group) => group.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.groups[index].avatar = action.payload.avatar;
+        }
+      })
+      .addCase(deleteGroup.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(deleteGroup.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.groups = state.groups.filter(
+          (group) => group.id !== action.payload
+        );
+        if (state.currentGroup && state.currentGroup.id === action.payload) {
+          state.currentGroup = null;
+        }
+      })
+      .addCase(deleteGroup.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(lockGroup.fulfilled, (state, action) => {
         const index = state.groups.findIndex((g) => g.id === action.payload.id);
         if (index !== -1) {
-          state.groups[index] = action.payload;
+          state.groups[index] = { ...state.groups[index], isLocked: true };
         }
-        if (state.currentGroup && state.currentGroup.id === action.payload.id) {
-          state.currentGroup = action.payload;
+      })
+      .addCase(unlockGroup.fulfilled, (state, action) => {
+        const index = state.groups.findIndex((g) => g.id === action.payload.id);
+        if (index !== -1) {
+          state.groups[index] = { ...state.groups[index], isLocked: false };
         }
       });
   },

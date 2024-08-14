@@ -91,7 +91,7 @@ const FullPostModal: React.FC<FullPostModalProps> = ({
         handleCloseMenu();
         onClose();
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error("Failed to delete post:", error);
       });
   };
